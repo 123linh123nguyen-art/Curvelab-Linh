@@ -1,0 +1,12 @@
+{
+  "name": "curvelab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CurveLab - cong cu hinh hoc va hinh hoc vi phan",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

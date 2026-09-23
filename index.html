@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CurveLab · Khảo sát đường cong</title><meta name="description" content="Vẽ đường cong 2D, 3D, phương trình ẩn; xem công thức, bảng biến thiên và khảo sát hình học vi phân."><link rel="icon" href="logoLinh.png"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="studio.css"></head>
+<body>
+<header><div class="brand-lockup"><img class="brand-logo" src="logoLinh.png" alt="Logo Linh" width="58" height="58"><span class="brand">CurveLab</span><span class="subtitle">Khám phá đường cong</span></div><span class="offline">Chạy ngoại tuyến · Không cần cài đặt</span></header>
+<nav class="lab-nav" aria-label="Không gian hình học"><a href="index.html" aria-current="page">Đường cong</a><a href="studio.html#surface">Mặt cong 3D</a><a href="studio.html#geometry">Hình học phẳng</a><a href="studio.html#worksheet">Sổ khảo sát</a></nav><main>
+<aside>
+<h1>Từ công thức đến hình vẽ.</h1>
+<p class="intro">Nhập biểu thức, chọn khoảng và khám phá hình học bằng cách kéo tham số.</p>
+<label>Dạng phương trình<select id="mode"><option value="param">Tham số 2D · x(t), y(t)</option><option value="space">Đường cong 3D · x(t), y(t), z(t)</option><option value="cart">Hàm số · y = f(x)</option><option value="polar">Tọa độ cực · r(θ)</option><option value="implicit">Phương trình ẩn · F(x,y) = 0</option></select></label>
+<label>Thư viện ví dụ<select id="preset"></select></label>
+<form id="form">
+<label>Hằng số (tùy chọn)<input id="constants" value="a=1; r=1" placeholder="a=1; r=2" spellcheck="false"></label>
+<div id="xfield"><label>x(t)<input id="ex" value="t^2 - 5" spellcheck="false" autocomplete="off"></label></div>
+<label><span id="ylabel">y(t)</span><input id="ey" value="t^3 - 5*t" spellcheck="false" autocomplete="off"></label>
+<div id="zfield" hidden><label>z(t)<input id="ez" value="t" spellcheck="false" autocomplete="off"></label></div>
+<div class="math-input-panel"><div class="hint" id="activefield">Bàn phím toán · chọn ô cần nhập</div><div id="mathkeys" class="mathkeys" aria-label="Bàn phím công thức"></div><details><summary>Hàm khác</summary><div id="morekeys" class="mathkeys"></div></details></div>
+<div id="formula-preview" aria-live="polite"></div>
+<div class="two"><label><span id="alabel">t từ</span><input id="a" value="-3" spellcheck="false"></label><label><span id="blabel">t đến</span><input id="b" value="3" spellcheck="false"></label></div>
+<div class="two" id="implicitbounds" hidden><label>y từ<input id="ymin" value="-2"></label><label>y đến<input id="ymax" value="2"></label></div>
+<button class="primary" type="submit">Vẽ / Căn vừa hình <span>↵</span></button>
+</form>
+<div id="error" role="alert"></div>
+<details open><summary>Điểm trên đồ thị</summary>
+<label class="check"><input id="showpoints" type="checkbox" checked>Hiện các điểm khảo sát</label>
+<label class="check"><input id="pointlabels" type="checkbox" checked>Hiện tên điểm P1, P2…</label>
+<label class="check"><input id="coordinates" type="checkbox" checked>Hiện giá trị tọa độ trên hai trục</label>
+<label class="check"><input id="fractions" type="checkbox" checked>Ưu tiên phân số / căn thức</label>
+<label class="check"><input id="projections" type="checkbox" checked>Đường dóng tới hai trục</label>
+<label>Mốc tham số thêm (ngăn bằng dấu ;)<input id="custompoints" placeholder="Ví dụ: -2; 0; 2; sqrt(5)" spellcheck="false"></label>
+<button id="addpoints" type="button">Cập nhật điểm</button><div id="pointerror" role="alert"></div>
+</details>
+<details><summary>Tùy chọn đồ thị</summary>
+<label>Độ chi tiết<select id="samples"><option value="1200">Nhanh · 1.200 đoạn</option><option value="4000" selected>Cân bằng · 4.000 đoạn</option><option value="12000">Mịn · 12.000 đoạn</option></select></label>
+<label class="check"><input id="auto" type="checkbox" checked>Tự vẽ khi nhập</label>
+<label class="check"><input id="equal" type="checkbox" checked>Cùng tỉ lệ hai trục</label>
+<label class="check"><input id="grid" type="checkbox" checked>Hiện lưới tọa độ</label>
+<label class="check"><input id="tangent" type="checkbox" checked>Tiếp tuyến tại điểm chọn</label>
+</details>
+<details><summary>Cú pháp & giới hạn</summary>
+<p>Có thể viết <code>2t</code>, <code>sin(2t)</code>, <code>2(t+1)</code> hoặc dùng <code>*</code>. Lũy thừa: <code>t^2</code>, <code>t**2</code>, <code>sin^2(t)</code>. Góc theo radian. Căn bậc ba thực: <code>cbrt(x)</code>.</p>
+<p>Hàm: <code>sin cos tan asin acos atan sinh cosh tanh sqrt cbrt abs exp log ln log10 floor ceil sign</code>. <code>log</code> và <code>ln</code> là logarit tự nhiên.</p>
+<p>Chấp nhận tiền tố <code>np.</code>, <code>math.</code>. Tọa độ cực dùng <code>theta</code>, <code>θ</code> hoặc <code>t</code>. Hàm số dùng <code>x</code>.</p>
+<p>Bảng biến thiên và hình là khảo sát số, có thể bỏ sót dao động nhanh, cực trị hoặc gián đoạn. 3D ở đây là đường cong một tham số, không phải mặt hai tham số. Chưa tự giải hệ phương trình, chứng minh chính quy toàn khoảng hay tìm mọi điểm tự cắt. Không nhận lệnh LaTeX khi dán; dùng các nút để tạo biểu thức.</p>
+</details>
+</aside>
+<section class="workspace">
+<div class="toolbar"><div><strong id="charttitle">Đường cong tham số</strong><div class="hint">Cuộn để phóng to · Kéo hình để di chuyển</div></div><div class="actions"><button id="fit" type="button">Căn vừa</button><button id="png" type="button">Tải PNG</button><button id="save" type="button">Lưu bài</button><button id="load" type="button">Mở bài</button><input type="file" id="file" accept=".json,application/json" hidden></div></div>
+<div id="camera-controls" hidden><span>Kéo để xoay · Cuộn để zoom</span><button type="button" id="view-iso">Phối cảnh</button><button type="button" id="view-xy">Oxy</button><button type="button" id="view-xz">Oxz</button><button type="button" id="view-yz">Oyz</button><label class="check"><input id="frenet" type="checkbox">Khung T, N, B tại điểm chọn</label></div>
+<div class="formula-controls"><label>Công thức trên hình <select id="formula-corner"><option value="right">Góc phải</option><option value="left">Góc trái</option><option value="hidden">Ẩn công thức</option></select></label></div><div class="plot"><div id="plot-formula" aria-label="Công thức của đồ thị"></div><canvas id="canvas" aria-label="Đồ thị đường cong. Tọa độ điểm hiện tại được trình bày bên dưới." role="img"></canvas><div class="legend"><span class="curvekey">— Đường cong</span><span class="tankey">┄ Tiếp tuyến</span><span class="surveykey">● Điểm khảo sát</span><span class="selectedkey">● Điểm chọn</span></div></div>
+<div class="playback"><div class="playrow"><label for="position"><span id="paramname">t</span> = <output id="tvalue">0</output></label><button id="play" type="button" aria-pressed="false">▶ Chạy</button></div><input id="position" type="range" min="0" max="10000" step="1" value="5000" aria-label="Vị trí tham số"><div class="rangeends"><span id="leftend"></span><span id="rightend"></span></div><div class="metrics" id="metrics" aria-live="polite"></div><div id="status" role="status"></div></div>
+<section class="analysis-panel" id="differential"><h2>Khảo sát hình học vi phân</h2><div id="geometry-summary"></div><div id="geometry-point"></div><details><summary>Đạo hàm & công thức sử dụng</summary><div id="derivative-formulas"></div><div id="geometry-equations"></div><p>Với đường phẳng, κ là độ cong không âm; κ có dấu dùng hướng của hệ trục Oxy. Khung Frenet không xác định khi tốc độ hoặc tích có hướng bằng 0.</p></details></section>
+<section class="analysis-panel"><h2>Hướng khảo sát</h2><div id="solution-guide"></div></section>
+<section class="analysis-panel" aria-labelledby="variationtitle"><h2 id="variationtitle">Bảng biến thiên</h2><p id="variationnote" class="hint">Khảo sát gần đúng trên khoảng đã nhập.</p><div class="table-scroll" id="variation"></div></section>
+<section class="analysis-panel" aria-labelledby="pointstitle"><h2 id="pointstitle">Các điểm khảo sát</h2><p class="hint">Chọn một mốc để xem đúng điểm và tiếp tuyến trên hình. Các mốc cùng tọa độ được gom chung một tên điểm.</p><div id="pointlist"></div></section>
+<p class="footnote">Bài gần nhất được ghi nhớ trong trình duyệt nếu trình duyệt cho phép. Dùng “Lưu bài” để giữ bản JSON có thể mở lại hoặc chia sẻ.</p>
+</section>
+</main>
+<script src="latex.js"></script><script src="vendor/tex-svg.js"></script><script src="engine.js"></script><script src="geometry.js"></script><script src="analysis.js"></script><script src="format.js"></script><script src="advanced.js"></script><script src="app.js"></script><script src="math-view.js"></script>
+</body></html>

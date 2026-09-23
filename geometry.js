@@ -1,0 +1,10 @@
+(function(root){'use strict';
+const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>Math.hypot(...a),unit=a=>a.map(v=>v/norm(a));
+function at(c,t){const [d1,d2,d3]=c.derivatives.map(fs=>fs.map(f=>f(t))),speed=norm(d1),cp=cross(d1,d2),cn=norm(cp),h=1e-6*Math.max(1,Math.abs(t)),left=c.point(t-h),right=c.point(t+h),estimate=['x','y','z'].map(k=>(right[k]-left[k])/(2*h)),stable=estimate.every(Number.isFinite)&&norm(estimate.map((v,i)=>v-d1[i]))<.02*Math.max(1,speed),regular=Number.isFinite(speed)&&speed>1e-8&&stable;
+const T=regular?unit(d1):null,B=regular&&cn>1e-10&&Number.isFinite(cn)?unit(cp):null,N=T&&B?cross(B,T):null;
+return {d1,d2,d3,speed,regular,stable,curvature:regular?cn/speed**3:NaN,torsion:B&&d3.every(Number.isFinite)?dot(cp,d3)/cn**2:NaN,T,N,B};}
+const nodes=[.1834346424956498,.525532409916329,.7966664774136267,.9602898564975363],weights=[.362683783378362,.3137066458778873,.2223810344533745,.1012285362903763];
+function integrate(f,a,b,n){let total=0;for(let i=0;i<n;i++){const l=a+(b-a)*i/n,r=a+(b-a)*(i+1)/n,m=(l+r)/2,h=(r-l)/2;for(let j=0;j<4;j++){const v=f(m-h*nodes[j]),w=f(m+h*nodes[j]);if(!Number.isFinite(v)||!Number.isFinite(w))return NaN;total+=h*weights[j]*(v+w);}}return total;}
+function length(c){if(c.omitted)return {value:NaN,converged:false,reason:'Có điểm ngoài miền xác định; cần chia lại khoảng trước khi tính độ dài.'};const speed=t=>norm(c.derivatives[0].map(f=>f(t)));let prev=integrate(speed,c.a,c.b,16),value=prev,error=Infinity;for(const n of [32,64,128,256]){value=integrate(speed,c.a,c.b,n);error=Math.abs(value-prev);if(!Number.isFinite(value))return {value:NaN,converged:false,reason:'Đạo hàm không hữu hạn tại các điểm tích phân.'};if(error<1e-7*Math.max(1,Math.abs(value)))return {value,error,converged:true};prev=value;}return {value,error,converged:false,reason:'Chưa đạt độ ổn định khi tăng lưới tích phân.'};}
+root.CurveGeometry={at,length,cross,dot,norm};if(typeof module!=='undefined')module.exports=root.CurveGeometry;
+})(typeof window!=='undefined'?window:globalThis);

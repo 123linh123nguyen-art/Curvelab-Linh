@@ -1,0 +1,34 @@
+/* Geometry calculations shared by the studio and its reference checks. */
+(function(root){'use strict';
+const M=root.CurveMath,G=root.CurveGeometry;
+const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),mul=(a,s)=>a.map(v=>v*s),dot=G.dot,cross=G.cross,norm=G.norm;
+const finite=p=>p.every(v=>Number.isFinite(v)&&Math.abs(v)<1e9);
+function number(s,cs={}){const n=M.compile(String(s),'constant',cs)();if(!Number.isFinite(n)||Math.abs(n)>1e8)throw Error('Giá trị phải là số hữu hạn, độ lớn không quá 10⁸.');return n;}
+function surface(c){const cs=M.constants(c.constants||''),vars=c.kind==='graph'?['x','y']:['u','v'];if(vars.some(v=>Object.hasOwn(cs,v)))throw Error('Không dùng tên biến mặt làm hằng số.');const source=c.kind==='graph'?['x','y',c.z]:[c.x,c.y,c.z];
+ const f=source.map(s=>M.compile(s,vars,cs)),d=vars.map(v=>f.map(a=>a.derive(v))),dd=[[0,0],[0,1],[1,1]].map(([a,b])=>f.map(f=>{const ast=M.diff(M.diff(f.ast,vars[a]),vars[b]);return scope=>M.evaluate(ast,scope);}));
+ const range=[c.u0,c.u1,c.v0,c.v1].map(v=>number(v,cs));if(range[0]>=range[1]||range[2]>=range[3])throw Error('Cận đầu phải nhỏ hơn cận cuối cho cả hai biến.');
+ const scope=(u,v)=>({[vars[0]]:u,[vars[1]]:v}),point=(u,v)=>f.map(fn=>fn(scope(u,v)));
+ function at(u,v,check=true){const s=scope(u,v),p=point(u,v),[du,dv]=d.map(fs=>fs.map(f=>f(s))),[duu,duv,dvv]=dd.map(fs=>fs.map(f=>f(s))),cp=cross(du,dv),jac=norm(cp),E=dot(du,du),F=dot(du,dv),GG=dot(dv,dv),det=jac*jac;
+  let regular=finite(p)&&finite(du)&&finite(dv)&&jac>1e-10*Math.max(1,norm(du)*norm(dv));
+  if(check&&regular){for(let k=0;k<2;k++){const h=1e-5*Math.max(1,Math.abs(k?v:u)),a=point(u+(k?0:h),v+(k?h:0)),b=point(u-(k?0:h),v-(k?h:0)),estimate=mul(sub(a,b),1/(2*h)),der=k?dv:du;if(!finite(estimate)||norm(sub(estimate,der))>.01*Math.max(1,norm(der)))regular=false;}}
+  const n=regular?mul(cp,1/jac):null,e=n?dot(n,duu):NaN,ff=n?dot(n,duv):NaN,g=n?dot(n,dvv):NaN,K=(e*g-ff*ff)/det,H=(E*g-2*F*ff+GG*e)/(2*det),disc=H*H-K;
+  return {p,du,dv,duu,duv,dvv,regular,jac,n,E,F,G:GG,e,f:ff,g,K:regular?K:NaN,H:regular?H:NaN,k1:regular&&disc>=-1e-9*Math.max(1,H*H,Math.abs(K))?H+Math.sqrt(Math.max(0,disc)):NaN,k2:regular&&disc>=-1e-9*Math.max(1,H*H,Math.abs(K))?H-Math.sqrt(Math.max(0,disc)):NaN};
+ }
+ function area(){const nodes=[-.8611363115940526,-.3399810435848563,.3399810435848563,.8611363115940526],weights=[.3478548451374538,.6521451548625461,.6521451548625461,.3478548451374538];let last=null,value=NaN,error=Infinity;for(const n of [4,8,16]){let sum=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++)for(let k=0;k<4;k++)for(let l=0;l<4;l++){const s=scope(range[0]+(i+.5+nodes[k]/2)*(range[1]-range[0])/n,range[2]+(j+.5+nodes[l]/2)*(range[3]-range[2])/n),[a,b]=d.map(fs=>fs.map(f=>f(s))),v=norm(cross(a,b));if(!Number.isFinite(v)||!finite(point(s[vars[0]],s[vars[1]])))return {value:NaN,stable:false,error:NaN};sum+=weights[k]*weights[l]*v;}value=sum*(range[1]-range[0])*(range[3]-range[2])/(4*n*n);if(last!==null){error=Math.abs(value-last);if(error<1e-6*Math.max(1,Math.abs(value)))return {value,error,stable:true};}last=value;}return {value,error,stable:false};}
+ return {f,d,vars,range,cs,point,at,area};
+}
+function triangle(A,B,C){const a=norm(sub(B,C)),b=norm(sub(A,C)),c=norm(sub(A,B)),ab=sub(B,A),ac=sub(C,A),twice=ab[0]*ac[1]-ab[1]*ac[0],area=Math.abs(twice)/2,perimeter=a+b+c,Gc=mul(add(add(A,B),C),1/3);if(Math.abs(twice)<1e-10*Math.max(1,a*a,b*b,c*c))return {regular:false,a,b,c,area,perimeter,G:Gc};
+ const ux=(dot(ab,ab)*ac[1]-dot(ac,ac)*ab[1])/(2*twice),uy=(ab[0]*dot(ac,ac)-ac[0]*dot(ab,ab))/(2*twice),O=add(A,[ux,uy]),H=sub(add(add(A,B),C),mul(O,2)),I=mul(add(add(mul(A,a),mul(B,b)),mul(C,c)),1/perimeter),angle=(b,c,a)=>Math.acos(Math.max(-1,Math.min(1,(b*b+c*c-a*a)/(2*b*c))))*180/Math.PI;
+ return {regular:true,a,b,c,area,perimeter,G:Gc,O,H,I,R:norm(sub(O,A)),r:2*area/perimeter,angles:[angle(b,c,a),angle(a,c,b),angle(a,b,c)],foot:add(A,mul(ab,dot(ac,ab)/dot(ab,ab)))};
+}
+function lineCircle(A,B,C,r){const d=sub(B,A),length=norm(d);if(length<1e-10)throw Error('A và B phải khác nhau để xác định đường thẳng.');if(!(r>0))throw Error('Bán kính phải dương.');const t=dot(sub(C,A),d)/dot(d,d),foot=add(A,mul(d,t)),dist=norm(sub(C,foot)),h2=r*r-dist*dist,tol=1e-10*Math.max(1,r*r,dist*dist);return {foot,distance:dist,points:h2<-tol?[]:Math.abs(h2)<=tol?[foot]:[add(foot,mul(d,Math.sqrt(h2)/length)),sub(foot,mul(d,Math.sqrt(h2)/length))]};}
+function transform(p,angle,scale,tx,ty){const c=Math.cos(angle),s=Math.sin(angle);return [scale*(c*p[0]-s*p[1])+tx,scale*(s*p[0]+c*p[1])+ty];}
+function functions(rows,constants){const cs=M.constants(constants||''),defs={};return rows.map((r,i)=>{let source=r.expr;source=source.replace(/\b([fghpq])\s*\(\s*x\s*\)/g,(_,name)=>{if(!defs[name])throw Error(`Hàm ${name}(x) phải được định nghĩa ở dòng trước.`);return '('+defs[name]+')';});const f=M.compile(source,'x',cs);defs['fghpq'[i]]=source;return {name:'fghpq'[i],f,df:f.derive('x'),ddf:f.derive('x',2),source,visible:r.visible!==false,color:r.color};});}
+function integral(f,a,b){const samples=Array.from({length:513},(_,i)=>f(a+(b-a)*i/512));if(samples.some(v=>!Number.isFinite(v)))return {stable:false,value:NaN,error:NaN};const sizes=samples.map(Math.abs).sort((a,b)=>a-b),scale=Math.max(1,sizes[256]);for(let i=1;i<samples.length;i++)if(samples[i]*samples[i-1]<0&&Math.max(Math.abs(samples[i]),Math.abs(samples[i-1]))>50*scale)return {stable:false,value:NaN,error:NaN};let last,value,error=Infinity;for(const n of [256,512,1024,2048]){let sum=0;for(let i=0;i<n;i++){const v=f(a+(i+.5)*(b-a)/n);if(!Number.isFinite(v))return {stable:false,value:NaN,error:NaN};sum+=v;}value=sum*(b-a)/n;if(last!==undefined){error=Math.abs(value-last);if(error<1e-6*Math.max(1,Math.abs(value)))return {stable:true,value,error};}last=value;}return {stable:false,value,error};}
+function roots(f,df,a,b){const out=[],step=(b-a)/1600,addRoot=x=>{if(Number.isFinite(x)&&Math.abs(f(x))<1e-7&&out.every(v=>Math.abs(x-v)>Math.max(1e-6,(b-a)*1e-7)))out.push(x);};
+ let max=0;for(let i=0;i<=20;i++)max=Math.max(max,Math.abs(f(a+(b-a)*i/20)));if(max<1e-12)return {values:[],zeroSample:true};
+ for(const fn of [f,df]){let x=a,y=fn(x);if(fn===f)addRoot(x);for(let i=1;i<=1600;i++){const nx=a+i*step,ny=fn(nx);if(Number.isFinite(y)&&Number.isFinite(ny)&&y*ny<0){let lo=x,hi=nx,fl=y;for(let k=0;k<45;k++){const mid=(lo+hi)/2,fm=fn(mid);if(!Number.isFinite(fm))break;if(fl*fm<=0)hi=mid;else{lo=mid;fl=fm;}}addRoot((lo+hi)/2);}if(Math.abs(ny)<1e-10)addRoot(nx);x=nx;y=ny;if(out.length>=40)return {values:out.sort((a,b)=>a-b),truncated:true};}}
+ return {values:out.sort((a,b)=>a-b)};
+}
+root.LabCore={surface,triangle,lineCircle,transform,functions,integral,roots,number,add,sub,mul,dot,cross,norm,finite};if(typeof module!=='undefined')module.exports=root.LabCore;
+})(typeof window!=='undefined'?window:globalThis);
